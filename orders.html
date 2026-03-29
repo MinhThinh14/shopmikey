@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>MIKEY SHOP | ĐƠN HÀNG</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="futuristic-bg">
+    <nav class="neon-nav">
+        <div class="nav-container">
+            <div class="logo"><i class="fas fa-cube"></i><span>MIKEY<span class="glow">SHOP</span></span></div>
+            <div class="nav-links">
+                <a href="home.html" class="nav-item active"><i class="fas fa-store"></i> Trang chủ</a>
+                <a href="orders.html" class="nav-item"><i class="fas fa-truck-fast"></i> Đơn hàng</a>
+                <a href="deposit.html" class="nav-item"><i class="fas fa-coins"></i> Nạp Robux</a>
+            </div>
+            <div class="user-panel">
+                <div class="credit-badge"><i class="fas fa-gem"></i><span id="userBalance">0</span> Robux</div>
+                <button id="logoutBtn" class="cyber-button small"><i class="fas fa-power-off"></i> Thoát</button>
+            </div>
+        </div>
+    </nav>
+    <main class="main-content">
+        <div class="page-header"><h2><i class="fas fa-truck-ramp-box"></i> GIAO DỊCH CỦA BẠN</h2></div>
+        <div id="ordersList" class="orders-container"></div>
+    </main>
+    <footer class="cyber-footer"><p>© 2036 MIKEY SHOP — Roblox uy tín số 1</p></footer>
+    <script type="module">
+        import { auth, db, collection, query, where, getDocs, onAuthStateChanged } from './js/firebase-config.js';
+        import { updateBalanceDisplay } from './js/common.js';
+        const ordersDiv = document.getElementById('ordersList');
+        async function loadOrders(userId) {
+            const q = query(collection(db, "orders"), where("userId", "==", userId));
+            const snapshot = await getDocs(q);
+            if(snapshot.empty) { ordersDiv.innerHTML = '<div class="empty-state"><i class="fas fa-box-open"></i><p>Chưa có đơn hàng nào.</p></div>'; return; }
+            ordersDiv.innerHTML = snapshot.docs.map(doc => { const d=doc.data(); return `<div class="order-card glass-edge"><div class="order-header"><span class="order-id">#${d.orderId?.slice(-6)||doc.id.slice(-6)}</span><span class="status ${d.status}">${d.status==='completed'?'HOÀN THÀNH':d.status.toUpperCase()}</span></div><div class="order-detail"><i class="fas fa-cube"></i> ${d.productName}</div><div class="order-detail"><i class="fas fa-coins"></i> ${d.price} Robux</div><div class="order-date"><i class="fas fa-calendar-alt"></i> ${new Date(d.timestamp?.toDate()).toLocaleString('vi-VN')}</div></div>`; }).join('');
+        }
+        onAuthStateChanged(auth, (user) => { if(!user) window.location.href='index.html'; else { updateBalanceDisplay(); loadOrders(user.uid); } });
+        document.getElementById('logoutBtn').addEventListener('click', async () => { const { signOut } = await import('./js/firebase-config.js'); await signOut(auth); window.location.href='index.html'; });
+    </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIKEY SHOP | CỔNG VÀO</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body class="auth-bg">
+    <div class="auth-container">
+        <div class="cyber-card">
+            <div class="logo-large">
+                <i class="fas fa-cube"></i>
+                <h1>MIKEY<span>SHOP</span></h1>
+                <div class="glow-line"></div>
+                <p>Trung tâm Roblox cao cấp</p>
+            </div>
+            <div class="auth-tabs">
+                <button id="loginTab" class="tab-btn active">ĐĂNG NHẬP</button>
+                <button id="signupTab" class="tab-btn">ĐĂNG KÝ</button>
+            </div>
+            <form id="loginForm" class="auth-form active">
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="loginPassword" placeholder="Mật khẩu" required>
+                </div>
+                <button type="submit" class="cyber-button full">VÀO NGAY <i class="fas fa-arrow-right"></i></button>
+            </form>
+            <form id="signupForm" class="auth-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="signupName" placeholder="Tên hiển thị" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="signupEmail" placeholder="Email" required>
+                </div>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="signupPassword" placeholder="Mật khẩu (tối thiểu 6 ký tự)" required
+                        minlength="6">
+                </div>
+                <button type="submit" class="cyber-button full">KÍCH HOẠT <i class="fas fa-user-plus"></i></button>
+            </form>
+            <div id="authMessage" class="message-area"></div>
+        </div>
+    </div>
+    <script type="module">
+        import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, db, doc, setDoc } from './js/firebase-config.js';
+
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const authMessage = document.getElementById('authMessage');
+
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('active');
+            signupTab.classList.remove('active');
+            loginForm.classList.add('active');
+            signupForm.classList.remove('active');
+            authMessage.innerText = '';
+        });
+        signupTab.addEventListener('click', () => {
+            signupTab.classList.add('active');
+            loginTab.classList.remove('active');
+            signupForm.classList.add('active');
+            loginForm.classList.remove('active');
+            authMessage.innerText = '';
+        });
+
+        // XỬ LÝ ĐĂNG NHẬP
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                authMessage.innerText = "❌ Vui lòng nhập đầy đủ email và mật khẩu.";
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                authMessage.innerText = "✅ Đăng nhập thành công. Đang chuyển...";
+                setTimeout(() => { window.location.href = 'home.html'; }, 1000);
+            } catch (err) {
+                console.error("Lỗi đăng nhập:", err.code, err.message);
+                let friendlyMsg = "❌ Đăng nhập thất bại. ";
+                if (err.code === 'auth/invalid-credential') {
+                    friendlyMsg += "Email hoặc mật khẩu không chính xác. Vui lòng thử lại.";
+                } else if (err.code === 'auth/user-not-found') {
+                    friendlyMsg += "Tài khoản không tồn tại. Hãy chuyển sang tab ĐĂNG KÝ để tạo tài khoản mới.";
+                } else if (err.code === 'auth/wrong-password') {
+                    friendlyMsg += "Mật khẩu sai. Vui lòng thử lại.";
+                } else if (err.code === 'auth/too-many-requests') {
+                    friendlyMsg += "Quá nhiều lần thử sai. Vui lòng thử lại sau.";
+                } else {
+                    friendlyMsg += err.message;
+                }
+                authMessage.innerText = friendlyMsg;
+            }
+        });
+
+        // XỬ LÝ ĐĂNG KÝ
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('signupName').value.trim();
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+
+            if (password.length < 6) {
+                authMessage.innerText = "❌ MẬT KHẨU PHẢI CÓ ÍT NHẤT 6 KÝ TỰ";
+                return;
+            }
+            if (username === "") {
+                authMessage.innerText = "❌ VUI LÒNG NHẬP TÊN HIỂN THỊ";
+                return;
+            }
+            if (!email) {
+                authMessage.innerText = "❌ VUI LÒNG NHẬP EMAIL";
+                return;
+            }
+
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCred.user;
+                await setDoc(doc(db, "users", user.uid), {
+                    username: username,
+                    email: email,
+                    balance: 500,
+                    createdAt: new Date()
+                });
+                authMessage.innerText = "✅ TẠO TÀI KHOẢN THÀNH CÔNG! Đang chuyển...";
+                setTimeout(() => { window.location.href = 'home.html'; }, 1200);
+            } catch (err) {
+                console.error("Lỗi đăng ký:", err.code, err.message);
+                let friendlyMsg = "❌ Đăng ký thất bại. ";
+                if (err.code === 'auth/weak-password') {
+                    friendlyMsg += "Mật khẩu quá yếu. Hãy dùng ít nhất 6 ký tự.";
+                } else if (err.code === 'auth/email-already-in-use') {
+                    friendlyMsg += "Email đã được đăng ký. Hãy chuyển sang tab ĐĂNG NHẬP.";
+                } else if (err.code === 'auth/invalid-email') {
+                    friendlyMsg += "Email không hợp lệ.";
+                } else {
+                    friendlyMsg += err.message;
+                }
+                authMessage.innerText = friendlyMsg;
+            }
+        });
+    </script>
+</body>
+
+</html>
