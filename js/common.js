@@ -1,4 +1,4 @@
-import { auth, db, doc, getDoc } from './firebase-config.js';
+import { auth, db, doc, getDoc } from '../firebase-config.js';
 
 export async function updateBalanceDisplay() {
     const user = auth.currentUser;
